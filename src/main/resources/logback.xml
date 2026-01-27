@@ -8,6 +8,7 @@
 
     <logger name="org.apache.beam" level="INFO"/>
     <logger name="org.apache.beam.sdk.util.WindowTracing" level="WARN"/>
+    <logger name="org.apache.beam.sdk.io.FileBasedSink" level="ERROR"/>
 
     <root level="DEBUG">
         <appender-ref ref="STDOUT"/>

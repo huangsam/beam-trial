@@ -1,43 +1,34 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.huangsam;
 
+import io.huangsam.functions.DeviceEventGenerator;
+import io.huangsam.functions.SensorEventFilter;
+import io.huangsam.functions.EventProcessor;
+import io.huangsam.model.DeviceEvent;
+import io.huangsam.model.DeviceEventCoder;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Window;
+import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.beam.sdk.values.TypeDescriptors;
+import org.joda.time.Duration;
 
 /**
- * A simple hello-world example for Apache Beam.
+ * A Beam pipeline demonstrating streaming-like analytics similar to Flink.
  *
- * <p>This pipeline creates a PCollection from a list of words, applies a simple transform
- * to prefix each word with "Greeting: ", and writes the results to a text file.
- *
- * <p>Concepts:
- * <pre>
- *   1. Creating a Pipeline
- *   2. Creating a PCollection from in-memory data
- *   3. Applying a simple transform (MapElements)
- *   4. Writing output to a file
- * </pre>
+ * <p>This pipeline simulates device event processing with filtering, side outputs,
+ * and aggregation, showcasing Beam's capabilities for complex data processing.
  */
 public class Main {
 
@@ -48,12 +39,67 @@ public class Main {
         // Create the pipeline
         Pipeline p = Pipeline.create(options);
 
-        // Create a PCollection from a list of strings
-        p.apply(Create.of("Hello", "Beam", "World", "Apache", "Data", "Processing"))
-                // Apply a transform to prefix each word
-                .apply(MapElements.into(TypeDescriptors.strings()).via((String word) -> "Greeting: " + word))
-                // Write the results to a file
-                .apply(TextIO.write().to("greetings"));
+        // Generate sequence of numbers (simulating streaming input)
+        java.util.List<Long> sequenceList = new java.util.ArrayList<>();
+        for (long i = 1; i <= 500; i++) {
+            sequenceList.add(i);
+        }
+        PCollection<Long> sequences = p.apply(Create.of(sequenceList));
+
+        // Generate device events from sequences
+        PCollection<DeviceEvent> rawEvents = sequences
+                .apply("Generate Device Events", ParDo.of(new DeviceEventGenerator()))
+                .setCoder(DeviceEventCoder.of());
+
+        // Filter to keep only sensor events
+        PCollection<DeviceEvent> sensorEvents = rawEvents
+                .apply("Filter Sensor Events", Filter.by(new SensorEventFilter()));
+
+        // Process events with side output for errors
+        TupleTag<DeviceEvent> mainTag = new TupleTag<>(){};
+        PCollectionTuple results = sensorEvents
+                .apply("Process Events", ParDo.of(new EventProcessor())
+                        .withOutputTags(mainTag, TupleTagList.of(EventProcessor.ERROR_EVENTS)));
+
+        // Get main output and error events from side output
+        PCollection<DeviceEvent> processedEvents = results.get(mainTag);
+        PCollection<DeviceEvent> errorEvents = results.get(EventProcessor.ERROR_EVENTS);
+
+        // Create device statistics by counting events per device in 5-second windows
+        PCollection<String> deviceStats = processedEvents
+                .apply("Map to KV", MapElements.into(TypeDescriptors.kvs(TypeDescriptors.strings(), TypeDescriptors.longs()))
+                        .via((DeviceEvent event) -> {
+                            assert event != null;
+                            return KV.of(event.id(), 1L);
+                        }))
+                // Apply 5-second fixed window (similar to Flink's TumblingProcessingTimeWindows)
+                .apply("5s Window", Window.into(FixedWindows.of(Duration.standardSeconds(5))))
+                .apply("Count per Device", Count.perKey())
+                .apply("Format Analytics", MapElements.into(TypeDescriptors.strings())
+                        .via((KV<String, Long> kv) -> {
+                            assert kv != null;
+                            return String.format("ANALYTICS [%s]: %d events in window", kv.getKey(), kv.getValue());
+                        }));
+
+        // Format outputs
+        PCollection<String> processedOutput = processedEvents
+                .apply("Format Processed", MapElements.into(TypeDescriptors.strings())
+                        .via((DeviceEvent event) -> {
+                            assert event != null;
+                            return "PROCESSED: " + event.id() + " -> " + event.payload().toUpperCase();
+                        }));
+
+        PCollection<String> errorOutput = errorEvents
+                .apply("Format Errors", MapElements.into(TypeDescriptors.strings())
+                        .via((DeviceEvent event) -> {
+                            assert event != null;
+                            return "ERROR EVENT: " + event.id() + " - " + event.payload();
+                        }));
+
+        // Write outputs to files
+        deviceStats.apply("Write Analytics", TextIO.write().to("analytics").withSuffix(".txt"));
+        processedOutput.apply("Write Processed", TextIO.write().to("processed").withSuffix(".txt"));
+        errorOutput.apply("Write Errors", TextIO.write().to("errors").withSuffix(".txt"));
 
         // Run the pipeline
         p.run().waitUntilFinish();
