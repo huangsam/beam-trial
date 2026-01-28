@@ -35,7 +35,7 @@ public class EventProcessorTest {
 
         TupleTag<DeviceEvent> mainTag = new TupleTag<>("main-output");
         PCollectionTuple results = pipeline
-                .apply(Create.of(events))
+                .apply(Create.of(events).withCoder(DeviceEventCoder.of()))
                 .apply(ParDo.of(new EventProcessor())
                         .withOutputTags(mainTag, TupleTagList.of(EventProcessor.ERROR_EVENTS)));
 

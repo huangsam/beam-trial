@@ -1,6 +1,7 @@
 package io.huangsam.functions;
 
 import io.huangsam.model.DeviceEvent;
+import io.huangsam.model.DeviceEventCoder;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -26,7 +27,8 @@ public class DeviceEventGeneratorTest {
 
         PCollection<DeviceEvent> events = pipeline
                 .apply(Create.of(sequences))
-                .apply(ParDo.of(new DeviceEventGenerator()));
+                .apply(ParDo.of(new DeviceEventGenerator()))
+                .setCoder(DeviceEventCoder.of());
 
         PAssert.that(events)
                 .containsInAnyOrder(

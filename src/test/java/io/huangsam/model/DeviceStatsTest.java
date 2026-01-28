@@ -40,7 +40,7 @@ public class DeviceStatsTest {
     @Test
     public void testDeviceStatsToString() {
         DeviceStats stats = new DeviceStats("device-1", 10L, 1000L, 2000L);
-        String expected = "DeviceStats{deviceId='device-1', eventCount=10, windowStart=1000, windowEnd=2000}";
+        String expected = "DeviceStats[deviceId=device-1, eventCount=10, windowStart=1000, windowEnd=2000]";
         assertEquals(expected, stats.toString());
     }
 

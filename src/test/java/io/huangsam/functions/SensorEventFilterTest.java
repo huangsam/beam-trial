@@ -1,6 +1,7 @@
 package io.huangsam.functions;
 
 import io.huangsam.model.DeviceEvent;
+import io.huangsam.model.DeviceEventCoder;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -30,8 +31,9 @@ public class SensorEventFilterTest {
         );
 
         PCollection<DeviceEvent> sensorEvents = pipeline
-                .apply(Create.of(events))
-                .apply(Filter.by(new SensorEventFilter()));
+                .apply(Create.of(events).withCoder(DeviceEventCoder.of()))
+                .apply(Filter.by(new SensorEventFilter()))
+                .setCoder(DeviceEventCoder.of());
 
         PAssert.that(sensorEvents)
                 .containsInAnyOrder(
