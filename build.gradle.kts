@@ -1,6 +1,7 @@
 plugins {
     id("java")
     application
+    id("com.diffplug.spotless") version "6.25.0"
 }
 
 group = "io.huangsam"
@@ -25,6 +26,12 @@ dependencies {
     testImplementation("org.apache.beam:beam-sdks-java-testing-junit:2.71.0")
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+spotless {
+    java {
+        eclipse()
+    }
 }
 
 tasks.test {

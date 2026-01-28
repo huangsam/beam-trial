@@ -13,24 +13,24 @@ import java.io.OutputStream;
  */
 public class DeviceEventCoder extends CustomCoder<DeviceEvent> {
 
-    private static final DeviceEventCoder INSTANCE = new DeviceEventCoder();
-    private static final StringUtf8Coder STRING_CODER = StringUtf8Coder.of();
+	private static final DeviceEventCoder INSTANCE = new DeviceEventCoder();
+	private static final StringUtf8Coder STRING_CODER = StringUtf8Coder.of();
 
-    public static DeviceEventCoder of() {
-        return INSTANCE;
-    }
+	public static DeviceEventCoder of() {
+		return INSTANCE;
+	}
 
-    @Override
-    public void encode(DeviceEvent value, @NonNull OutputStream outStream) throws IOException {
-        assert value != null;
-        STRING_CODER.encode(value.id(), outStream);
-        STRING_CODER.encode(value.payload(), outStream);
-    }
+	@Override
+	public void encode(DeviceEvent value, @NonNull OutputStream outStream) throws IOException {
+		assert value != null;
+		STRING_CODER.encode(value.id(), outStream);
+		STRING_CODER.encode(value.payload(), outStream);
+	}
 
-    @Override
-    public DeviceEvent decode(@NonNull InputStream inStream) throws IOException {
-        String id = STRING_CODER.decode(inStream);
-        String payload = STRING_CODER.decode(inStream);
-        return new DeviceEvent(id, payload);
-    }
+	@Override
+	public DeviceEvent decode(@NonNull InputStream inStream) throws IOException {
+		String id = STRING_CODER.decode(inStream);
+		String payload = STRING_CODER.decode(inStream);
+		return new DeviceEvent(id, payload);
+	}
 }

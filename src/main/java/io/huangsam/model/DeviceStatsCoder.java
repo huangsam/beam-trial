@@ -14,29 +14,29 @@ import java.io.OutputStream;
  */
 public class DeviceStatsCoder extends CustomCoder<DeviceStats> {
 
-    private static final DeviceStatsCoder INSTANCE = new DeviceStatsCoder();
-    private static final StringUtf8Coder STRING_CODER = StringUtf8Coder.of();
-    private static final VarLongCoder LONG_CODER = VarLongCoder.of();
+	private static final DeviceStatsCoder INSTANCE = new DeviceStatsCoder();
+	private static final StringUtf8Coder STRING_CODER = StringUtf8Coder.of();
+	private static final VarLongCoder LONG_CODER = VarLongCoder.of();
 
-    public static DeviceStatsCoder of() {
-        return INSTANCE;
-    }
+	public static DeviceStatsCoder of() {
+		return INSTANCE;
+	}
 
-    @Override
-    public void encode(DeviceStats value, @NonNull OutputStream outStream) throws IOException {
-        assert value != null;
-        STRING_CODER.encode(value.deviceId(), outStream);
-        LONG_CODER.encode(value.eventCount(), outStream);
-        LONG_CODER.encode(value.windowStart(), outStream);
-        LONG_CODER.encode(value.windowEnd(), outStream);
-    }
+	@Override
+	public void encode(DeviceStats value, @NonNull OutputStream outStream) throws IOException {
+		assert value != null;
+		STRING_CODER.encode(value.deviceId(), outStream);
+		LONG_CODER.encode(value.eventCount(), outStream);
+		LONG_CODER.encode(value.windowStart(), outStream);
+		LONG_CODER.encode(value.windowEnd(), outStream);
+	}
 
-    @Override
-    public DeviceStats decode(@NonNull InputStream inStream) throws IOException {
-        String deviceId = STRING_CODER.decode(inStream);
-        long eventCount = LONG_CODER.decode(inStream);
-        long windowStart = LONG_CODER.decode(inStream);
-        long windowEnd = LONG_CODER.decode(inStream);
-        return new DeviceStats(deviceId, eventCount, windowStart, windowEnd);
-    }
+	@Override
+	public DeviceStats decode(@NonNull InputStream inStream) throws IOException {
+		String deviceId = STRING_CODER.decode(inStream);
+		long eventCount = LONG_CODER.decode(inStream);
+		long windowStart = LONG_CODER.decode(inStream);
+		long windowEnd = LONG_CODER.decode(inStream);
+		return new DeviceStats(deviceId, eventCount, windowStart, windowEnd);
+	}
 }

@@ -8,9 +8,9 @@ import org.apache.beam.sdk.transforms.SerializableFunction;
  */
 public class SensorEventFilter implements SerializableFunction<DeviceEvent, Boolean> {
 
-    @Override
-    public Boolean apply(DeviceEvent event) {
-        assert event != null;
-        return event.payload().startsWith("SENSOR_READING");
-    }
+	@Override
+	public Boolean apply(DeviceEvent event) {
+		assert event != null;
+		return event.payload().startsWith("SENSOR_READING");
+	}
 }

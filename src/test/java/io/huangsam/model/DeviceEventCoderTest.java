@@ -12,58 +12,58 @@ import java.io.IOException;
  */
 public class DeviceEventCoderTest {
 
-    @Test
-    public void testDeviceEventCoderRoundTrip() throws IOException {
-        DeviceEvent original = new DeviceEvent("device-1", "SENSOR_READING");
-        DeviceEventCoder coder = DeviceEventCoder.of();
+	@Test
+	public void testDeviceEventCoderRoundTrip() throws IOException {
+		DeviceEvent original = new DeviceEvent("device-1", "SENSOR_READING");
+		DeviceEventCoder coder = DeviceEventCoder.of();
 
-        // Encode
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        coder.encode(original, out);
+		// Encode
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		coder.encode(original, out);
 
-        // Decode
-        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
-        DeviceEvent decoded = coder.decode(in);
+		// Decode
+		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+		DeviceEvent decoded = coder.decode(in);
 
-        assert decoded != null;
-        assertEquals(original, decoded);
-        assertEquals(original.id(), decoded.id());
-        assertEquals(original.payload(), decoded.payload());
-    }
+		assert decoded != null;
+		assertEquals(original, decoded);
+		assertEquals(original.id(), decoded.id());
+		assertEquals(original.payload(), decoded.payload());
+	}
 
-    @Test
-    public void testDeviceEventCoderWithEmptyStrings() throws IOException {
-        DeviceEvent original = new DeviceEvent("", "");
-        DeviceEventCoder coder = DeviceEventCoder.of();
+	@Test
+	public void testDeviceEventCoderWithEmptyStrings() throws IOException {
+		DeviceEvent original = new DeviceEvent("", "");
+		DeviceEventCoder coder = DeviceEventCoder.of();
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        coder.encode(original, out);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		coder.encode(original, out);
 
-        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
-        DeviceEvent decoded = coder.decode(in);
+		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+		DeviceEvent decoded = coder.decode(in);
 
-        assertEquals(original, decoded);
-    }
+		assertEquals(original, decoded);
+	}
 
-    @Test
-    public void testDeviceEventCoderWithSpecialCharacters() throws IOException {
-        DeviceEvent original = new DeviceEvent("device-特殊字符", "payload-ñáéíóú");
-        DeviceEventCoder coder = DeviceEventCoder.of();
+	@Test
+	public void testDeviceEventCoderWithSpecialCharacters() throws IOException {
+		DeviceEvent original = new DeviceEvent("device-特殊字符", "payload-ñáéíóú");
+		DeviceEventCoder coder = DeviceEventCoder.of();
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        coder.encode(original, out);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		coder.encode(original, out);
 
-        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
-        DeviceEvent decoded = coder.decode(in);
+		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+		DeviceEvent decoded = coder.decode(in);
 
-        assertEquals(original, decoded);
-    }
+		assertEquals(original, decoded);
+	}
 
-    @Test
-    public void testDeviceEventCoderSingleton() {
-        DeviceEventCoder coder1 = DeviceEventCoder.of();
-        DeviceEventCoder coder2 = DeviceEventCoder.of();
+	@Test
+	public void testDeviceEventCoderSingleton() {
+		DeviceEventCoder coder1 = DeviceEventCoder.of();
+		DeviceEventCoder coder2 = DeviceEventCoder.of();
 
-        assertSame(coder1, coder2);
-    }
+		assertSame(coder1, coder2);
+	}
 }
