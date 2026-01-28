@@ -10,16 +10,16 @@ import org.apache.beam.sdk.values.TupleTag;
  */
 public class EventProcessor extends DoFn<DeviceEvent, DeviceEvent> {
 
-	public static final TupleTag<DeviceEvent> ERROR_EVENTS = new TupleTag<>("error-events");
+    public static final TupleTag<DeviceEvent> ERROR_EVENTS = new TupleTag<>("error-events");
 
-	@ProcessElement
-	public void processElement(@Element DeviceEvent event, ProcessContext c) {
-		// Route error events to side output
-		if (event.payload().contains("ERROR")) {
-			c.output(ERROR_EVENTS, event);
-		} else {
-			// Pass through valid events to main output
-			c.output(event);
-		}
-	}
+    @ProcessElement
+    public void processElement(@Element DeviceEvent event, ProcessContext c) {
+        // Route error events to side output
+        if (event.payload().contains("ERROR")) {
+            c.output(ERROR_EVENTS, event);
+        } else {
+            // Pass through valid events to main output
+            c.output(event);
+        }
+    }
 }

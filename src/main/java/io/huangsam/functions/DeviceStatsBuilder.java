@@ -10,14 +10,14 @@ import org.apache.beam.sdk.values.KV;
  * timing information.
  */
 public class DeviceStatsBuilder extends DoFn<KV<String, Long>, DeviceStats> {
-	@ProcessElement
-	public void processElement(@Element KV<String, Long> kv, IntervalWindow window, ProcessContext c) {
-		String deviceId = kv.getKey();
-		long eventCount = kv.getValue();
-		long windowStart = window.start().getMillis();
-		long windowEnd = window.end().getMillis();
+    @ProcessElement
+    public void processElement(@Element KV<String, Long> kv, IntervalWindow window, ProcessContext c) {
+        String deviceId = kv.getKey();
+        long eventCount = kv.getValue();
+        long windowStart = window.start().getMillis();
+        long windowEnd = window.end().getMillis();
 
-		DeviceStats stats = new DeviceStats(deviceId, eventCount, windowStart, windowEnd);
-		c.output(stats);
-	}
+        DeviceStats stats = new DeviceStats(deviceId, eventCount, windowStart, windowEnd);
+        c.output(stats);
+    }
 }

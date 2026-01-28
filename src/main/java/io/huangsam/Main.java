@@ -1,9 +1,9 @@
 package io.huangsam;
 
 import io.huangsam.functions.DeviceEventGenerator;
-import io.huangsam.functions.SensorEventFilter;
-import io.huangsam.functions.EventProcessor;
 import io.huangsam.functions.DeviceStatsBuilder;
+import io.huangsam.functions.EventProcessor;
+import io.huangsam.functions.SensorEventFilter;
 import io.huangsam.model.DeviceEvent;
 import io.huangsam.model.DeviceEventCoder;
 import io.huangsam.model.DeviceStats;
@@ -36,76 +36,83 @@ import org.joda.time.Duration;
  */
 public class Main {
 
-	public static void main(String[] args) {
-		// Create pipeline options
-		PipelineOptions options = PipelineOptionsFactory.create();
+    public static void main(String[] args) {
+        // Create pipeline options
+        PipelineOptions options = PipelineOptionsFactory.create();
 
-		// Create the pipeline
-		Pipeline p = Pipeline.create(options);
+        // Create the pipeline
+        Pipeline p = Pipeline.create(options);
 
-		// Generate sequence of numbers (simulating streaming input)
-		java.util.List<Long> sequenceList = new java.util.ArrayList<>();
-		for (long i = 1; i <= 500; i++) {
-			sequenceList.add(i);
-		}
-		PCollection<Long> sequences = p.apply(Create.of(sequenceList));
+        // Generate sequence of numbers (simulating streaming input)
+        java.util.List<Long> sequenceList = new java.util.ArrayList<>();
+        for (long i = 1; i <= 500; i++) {
+            sequenceList.add(i);
+        }
+        PCollection<Long> sequences = p.apply(Create.of(sequenceList));
 
-		// Generate device events from sequences
-		PCollection<DeviceEvent> rawEvents = sequences
-				.apply("Generate Device Events", ParDo.of(new DeviceEventGenerator())).setCoder(DeviceEventCoder.of());
+        // Generate device events from sequences
+        PCollection<DeviceEvent> rawEvents = sequences
+                .apply("Generate Device Events", ParDo.of(new DeviceEventGenerator()))
+                .setCoder(DeviceEventCoder.of());
 
-		// Filter to keep only sensor events
-		PCollection<DeviceEvent> sensorEvents = rawEvents.apply("Filter Sensor Events",
-				Filter.by(new SensorEventFilter()));
+        // Filter to keep only sensor events
+        PCollection<DeviceEvent> sensorEvents =
+                rawEvents.apply("Filter Sensor Events", Filter.by(new SensorEventFilter()));
 
-		// Process events with side output for errors
-		TupleTag<DeviceEvent> mainTag = new TupleTag<>("main-output");
-		PCollectionTuple results = sensorEvents.apply("Process Events",
-				ParDo.of(new EventProcessor()).withOutputTags(mainTag, TupleTagList.of(EventProcessor.ERROR_EVENTS)));
+        // Process events with side output for errors
+        TupleTag<DeviceEvent> mainTag = new TupleTag<>("main-output");
+        PCollectionTuple results = sensorEvents.apply(
+                "Process Events",
+                ParDo.of(new EventProcessor()).withOutputTags(mainTag, TupleTagList.of(EventProcessor.ERROR_EVENTS)));
 
-		// Get main output and error events from side output
-		PCollection<DeviceEvent> processedEvents = results.get(mainTag).setCoder(DeviceEventCoder.of());
-		PCollection<DeviceEvent> errorEvents = results.get(EventProcessor.ERROR_EVENTS).setCoder(DeviceEventCoder.of());
+        // Get main output and error events from side output
+        PCollection<DeviceEvent> processedEvents = results.get(mainTag).setCoder(DeviceEventCoder.of());
+        PCollection<DeviceEvent> errorEvents =
+                results.get(EventProcessor.ERROR_EVENTS).setCoder(DeviceEventCoder.of());
 
-		// Create device statistics by counting events per device in 5-second windows
-		PCollection<DeviceStats> statsCollection = processedEvents.apply("Map to KV",
-				MapElements.into(TypeDescriptors.kvs(TypeDescriptors.strings(), TypeDescriptors.longs()))
-						.via((DeviceEvent event) -> {
-							assert event != null;
-							return KV.of(event.id(), 1L);
-						}))
-				// Apply 5-second fixed window (similar to Flink's
-				// TumblingProcessingTimeWindows)
-				.apply("5s Window", Window.into(FixedWindows.of(Duration.standardSeconds(5))))
-				.apply("Count per Device", Count.perKey())
-				.apply("Build Device Stats", ParDo.of(new DeviceStatsBuilder())).setCoder(DeviceStatsCoder.of());
+        // Create device statistics by counting events per device in 5-second windows
+        PCollection<DeviceStats> statsCollection = processedEvents
+                .apply(
+                        "Map to KV",
+                        MapElements.into(TypeDescriptors.kvs(TypeDescriptors.strings(), TypeDescriptors.longs()))
+                                .via((DeviceEvent event) -> {
+                                    assert event != null;
+                                    return KV.of(event.id(), 1L);
+                                }))
+                // Apply 5-second fixed window (similar to Flink's
+                // TumblingProcessingTimeWindows)
+                .apply("5s Window", Window.into(FixedWindows.of(Duration.standardSeconds(5))))
+                .apply("Count per Device", Count.perKey())
+                .apply("Build Device Stats", ParDo.of(new DeviceStatsBuilder()))
+                .setCoder(DeviceStatsCoder.of());
 
-		PCollection<String> deviceStats = statsCollection.apply("Format Analytics",
-				MapElements.into(TypeDescriptors.strings()).via((DeviceStats stats) -> {
-					assert stats != null;
-					return String.format("ANALYTICS [%s]: %d events in window [%d, %d]", stats.deviceId(),
-							stats.eventCount(), stats.windowStart(), stats.windowEnd());
-				}));
+        PCollection<String> deviceStats = statsCollection.apply(
+                "Format Analytics", MapElements.into(TypeDescriptors.strings()).via((DeviceStats stats) -> {
+                    assert stats != null;
+                    return String.format(
+                            "ANALYTICS [%s]: %d events in window [%d, %d]",
+                            stats.deviceId(), stats.eventCount(), stats.windowStart(), stats.windowEnd());
+                }));
 
-		// Format outputs
-		PCollection<String> processedOutput = processedEvents.apply("Format Processed",
-				MapElements.into(TypeDescriptors.strings()).via((DeviceEvent event) -> {
-					assert event != null;
-					return "PROCESSED: " + event.id() + " -> " + event.payload().toUpperCase();
-				}));
+        // Format outputs
+        PCollection<String> processedOutput = processedEvents.apply(
+                "Format Processed", MapElements.into(TypeDescriptors.strings()).via((DeviceEvent event) -> {
+                    assert event != null;
+                    return "PROCESSED: " + event.id() + " -> " + event.payload().toUpperCase();
+                }));
 
-		PCollection<String> errorOutput = errorEvents.apply("Format Errors",
-				MapElements.into(TypeDescriptors.strings()).via((DeviceEvent event) -> {
-					assert event != null;
-					return "ERROR EVENT: " + event.id() + " - " + event.payload();
-				}));
+        PCollection<String> errorOutput = errorEvents.apply(
+                "Format Errors", MapElements.into(TypeDescriptors.strings()).via((DeviceEvent event) -> {
+                    assert event != null;
+                    return "ERROR EVENT: " + event.id() + " - " + event.payload();
+                }));
 
-		// Write outputs to files
-		deviceStats.apply("Write Analytics", TextIO.write().to("analytics").withSuffix(".txt"));
-		processedOutput.apply("Write Processed", TextIO.write().to("processed").withSuffix(".txt"));
-		errorOutput.apply("Write Errors", TextIO.write().to("errors").withSuffix(".txt"));
+        // Write outputs to files
+        deviceStats.apply("Write Analytics", TextIO.write().to("analytics").withSuffix(".txt"));
+        processedOutput.apply("Write Processed", TextIO.write().to("processed").withSuffix(".txt"));
+        errorOutput.apply("Write Errors", TextIO.write().to("errors").withSuffix(".txt"));
 
-		// Run the pipeline
-		p.run().waitUntilFinish();
-	}
+        // Run the pipeline
+        p.run().waitUntilFinish();
+    }
 }

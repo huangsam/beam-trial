@@ -25,6 +25,6 @@ dependencies {
 
 spotless {
     java {
-        eclipse()
+        palantirJavaFormat()
     }
 }
