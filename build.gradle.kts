@@ -21,7 +21,6 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.26")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.hamcrest:hamcrest:3.0")
-    testImplementation("org.apache.beam:beam-sdks-java-testing-junit:2.71.0")
 }
 
 spotless {
