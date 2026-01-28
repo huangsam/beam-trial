@@ -3,8 +3,11 @@ package io.huangsam;
 import io.huangsam.functions.DeviceEventGenerator;
 import io.huangsam.functions.SensorEventFilter;
 import io.huangsam.functions.EventProcessor;
+import io.huangsam.functions.DeviceStatsBuilder;
 import io.huangsam.model.DeviceEvent;
 import io.huangsam.model.DeviceEventCoder;
+import io.huangsam.model.DeviceStats;
+import io.huangsam.model.DeviceStatsCoder;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.PipelineOptions;
@@ -66,7 +69,7 @@ public class Main {
         PCollection<DeviceEvent> errorEvents = results.get(EventProcessor.ERROR_EVENTS);
 
         // Create device statistics by counting events per device in 5-second windows
-        PCollection<String> deviceStats = processedEvents
+        PCollection<DeviceStats> statsCollection = processedEvents
                 .apply("Map to KV", MapElements.into(TypeDescriptors.kvs(TypeDescriptors.strings(), TypeDescriptors.longs()))
                         .via((DeviceEvent event) -> {
                             assert event != null;
@@ -75,10 +78,15 @@ public class Main {
                 // Apply 5-second fixed window (similar to Flink's TumblingProcessingTimeWindows)
                 .apply("5s Window", Window.into(FixedWindows.of(Duration.standardSeconds(5))))
                 .apply("Count per Device", Count.perKey())
+                .apply("Build Device Stats", ParDo.of(new DeviceStatsBuilder()))
+                .setCoder(DeviceStatsCoder.of());
+
+        PCollection<String> deviceStats = statsCollection
                 .apply("Format Analytics", MapElements.into(TypeDescriptors.strings())
-                        .via((KV<String, Long> kv) -> {
-                            assert kv != null;
-                            return String.format("ANALYTICS [%s]: %d events in window", kv.getKey(), kv.getValue());
+                        .via((DeviceStats stats) -> {
+                            assert stats != null;
+                            return String.format("ANALYTICS [%s]: %d events in window [%d, %d]",
+                                    stats.deviceId(), stats.eventCount(), stats.windowStart(), stats.windowEnd());
                         }));
 
         // Format outputs

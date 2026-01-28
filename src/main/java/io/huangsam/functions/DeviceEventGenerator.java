@@ -2,6 +2,7 @@ package io.huangsam.functions;
 
 import io.huangsam.model.DeviceEvent;
 import org.apache.beam.sdk.transforms.DoFn;
+import org.joda.time.Instant;
 
 /**
  * Generates DeviceEvent objects from sequence numbers.
@@ -20,6 +21,8 @@ public class DeviceEventGenerator extends DoFn<Long, DeviceEvent> {
         } else {
             payload = "SENSOR_READING_" + sequence; // sensor event
         }
-        out.output(new DeviceEvent(id, payload));
+        DeviceEvent event = new DeviceEvent(id, payload);
+        // Assign timestamp based on sequence (each event is 100ms apart)
+        out.outputWithTimestamp(event, new Instant(sequence * 100L));
     }
 }
