@@ -59,14 +59,16 @@ public class Main {
                 .apply("Filter Sensor Events", Filter.by(new SensorEventFilter()));
 
         // Process events with side output for errors
-        TupleTag<DeviceEvent> mainTag = new TupleTag<>(){};
+        TupleTag<DeviceEvent> mainTag = new TupleTag<>("main-output");
         PCollectionTuple results = sensorEvents
                 .apply("Process Events", ParDo.of(new EventProcessor())
                         .withOutputTags(mainTag, TupleTagList.of(EventProcessor.ERROR_EVENTS)));
 
         // Get main output and error events from side output
-        PCollection<DeviceEvent> processedEvents = results.get(mainTag);
-        PCollection<DeviceEvent> errorEvents = results.get(EventProcessor.ERROR_EVENTS);
+        PCollection<DeviceEvent> processedEvents = results.get(mainTag)
+                .setCoder(DeviceEventCoder.of());
+        PCollection<DeviceEvent> errorEvents = results.get(EventProcessor.ERROR_EVENTS)
+                .setCoder(DeviceEventCoder.of());
 
         // Create device statistics by counting events per device in 5-second windows
         PCollection<DeviceStats> statsCollection = processedEvents

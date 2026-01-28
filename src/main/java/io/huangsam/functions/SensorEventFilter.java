@@ -11,6 +11,6 @@ public class SensorEventFilter implements SerializableFunction<DeviceEvent, Bool
     @Override
     public Boolean apply(DeviceEvent event) {
         assert event != null;
-        return !event.payload().startsWith("SYSTEM_EVENT");
+        return event.payload().startsWith("SENSOR_READING");
     }
 }

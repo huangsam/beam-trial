@@ -9,8 +9,7 @@ import org.apache.beam.sdk.values.TupleTag;
  */
 public class EventProcessor extends DoFn<DeviceEvent, DeviceEvent> {
 
-    public static final TupleTag<DeviceEvent> ERROR_EVENTS = new TupleTag<>() {
-    };
+    public static final TupleTag<DeviceEvent> ERROR_EVENTS = new TupleTag<>("error-events");
 
     @ProcessElement
     public void processElement(@Element DeviceEvent event, ProcessContext c) {

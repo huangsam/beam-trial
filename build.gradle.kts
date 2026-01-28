@@ -20,6 +20,10 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.26")
     testImplementation(platform("org.junit:junit-bom:5.14.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.hamcrest:hamcrest:3.0")
+    testImplementation("org.apache.beam:beam-sdks-java-testing-junit:2.71.0")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
